@@ -387,7 +387,17 @@ bundle-push: ## Push the bundle image.
 .PHONY: protoc
 PROTOC = $(shell pwd)/bin/proto/bin/protoc
 protoc: protoc-gen-go protoc-gen-go-grpc ## Download protoc (protocol buffers tool needed for gRPC)
-	test -f ${PROTOC} || (cd $(shell pwd)/bin/proto && curl -sSLo protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v3.16.0/protoc-3.16.0-linux-x86_64.zip && unzip protoc.zip && rm protoc.zip)
+	@if [ ! -f ${PROTOC} ]; then \
+		PROTOC_ARCH=$$(uname -m); \
+		case $$PROTOC_ARCH in \
+			x86_64) PROTOC_ARCH=x86_64 ;; \
+			s390x) PROTOC_ARCH=s390_64 ;; \
+			*) echo "Unsupported architecture: $$PROTOC_ARCH. Only x86_64 and s390x are supported." && exit 1 ;; \
+		esac; \
+		cd $(shell pwd)/bin/proto && \
+		curl -sSLo protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v3.16.0/protoc-3.16.0-linux-$$PROTOC_ARCH.zip && \
+		unzip protoc.zip && rm protoc.zip; \
+	fi
 
 .PHONY: protoc-gen-go
 PROTOC_GEN_GO = $(shell pwd)/bin/proto/bin/protoc-gen-go
