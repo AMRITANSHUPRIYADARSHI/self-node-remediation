@@ -49,7 +49,9 @@ COPY internal/ internal/
 # for getting version info
 COPY .git/ .git/
 COPY install/ install/
-# Build
+
+# Build - pass TARGETARCH to build script
+ENV TARGETARCH=${TARGETARCH}
 RUN ./hack/build.sh
 
 FROM registry.access.redhat.com/ubi9/ubi:latest
