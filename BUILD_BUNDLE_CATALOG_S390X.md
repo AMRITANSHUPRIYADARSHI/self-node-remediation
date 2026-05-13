@@ -2,6 +2,11 @@
 
 This guide provides complete step-by-step instructions for building all required images (operator, bundle, and catalog/index) for the Self Node Remediation operator on s390x architecture.
 
+> **💡 Looking for Cross-Platform Builds?**
+> If you want to build images for **multiple architectures** (amd64, s390x, arm64, ppc64le) from a **single machine** using Docker buildx, see **[CROSS_PLATFORM_BUILD_GUIDE.md](CROSS_PLATFORM_BUILD_GUIDE.md)**.
+>
+> This guide focuses on **native s390x builds** (building on an s390x machine).
+
 ## Table of Contents
 1. [Overview](#overview)
 2. [Prerequisites](#prerequisites)
@@ -10,7 +15,8 @@ This guide provides complete step-by-step instructions for building all required
 5. [Step 3: Build Catalog/Index Image](#step-3-build-catalogindex-image)
 6. [Step 4: Verify All Images](#step-4-verify-all-images)
 7. [Step 5: Deploy Using Catalog](#step-5-deploy-using-catalog)
-8. [Troubleshooting](#troubleshooting)
+8. [Cross-Platform Alternative](#cross-platform-alternative)
+9. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -634,6 +640,63 @@ Save this as `build-all-s390x.sh` and run:
 chmod +x build-all-s390x.sh
 ./build-all-s390x.sh
 ```
+
+---
+
+## Cross-Platform Alternative
+
+### Building Multi-Arch Images with Docker Buildx
+
+Instead of building natively on s390x, you can use **Docker buildx** to build for multiple architectures from any machine.
+
+**Advantages:**
+- ✅ Build for multiple architectures from a single machine
+- ✅ No need for native s390x hardware
+- ✅ Automated multi-arch manifest creation
+- ✅ Faster CI/CD pipelines
+
+**Quick Example:**
+
+```bash
+# Setup buildx (one-time)
+docker buildx create --name multiarch --use
+docker buildx inspect --bootstrap
+
+# Build operator for amd64 and s390x
+docker buildx build \
+  --platform linux/amd64,linux/s390x \
+  --tag quay.io/YOUR_USERNAME/self-node-remediation-operator:v1.0 \
+  --file Dockerfile \
+  --push \
+  .
+
+# Build bundle for multiple architectures
+docker buildx build \
+  --platform linux/amd64,linux/s390x \
+  --tag quay.io/YOUR_USERNAME/self-node-remediation-operator-bundle:v1.0 \
+  --file bundle.Dockerfile \
+  --push \
+  .
+
+# Build catalog for multiple architectures
+docker buildx build \
+  --platform linux/amd64,linux/s390x \
+  --tag quay.io/YOUR_USERNAME/self-node-remediation-operator-catalog:v1.0 \
+  --file catalog.Dockerfile \
+  --push \
+  .
+```
+
+**For complete instructions, see [CROSS_PLATFORM_BUILD_GUIDE.md](CROSS_PLATFORM_BUILD_GUIDE.md)**
+
+### When to Use Each Approach
+
+| Approach | Best For | Pros | Cons |
+|----------|----------|------|------|
+| **Native s390x Build** (this guide) | - Testing on actual hardware<br>- Verifying s390x-specific issues<br>- When you have s390x access | - True native compilation<br>- No emulation overhead<br>- Guaranteed compatibility | - Requires s390x machine<br>- Manual per-architecture builds |
+| **Docker Buildx** ([other guide](CROSS_PLATFORM_BUILD_GUIDE.md)) | - CI/CD pipelines<br>- Building for multiple architectures<br>- Development on amd64/arm64 | - Single build command<br>- Multi-arch support<br>- Works from any machine | - Uses QEMU emulation<br>- Slower for non-native archs<br>- Requires buildx setup |
+
+**Recommendation:** Use **buildx for CI/CD** and **native builds for final verification**.
 
 ---
 
